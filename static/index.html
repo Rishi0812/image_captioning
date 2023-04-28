@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+      crossorigin="anonymous"
+    ></script>
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Image Captioning</title>
+    <style>
+      body {
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        letter-spacing: 5px;
+        /* background-image: url('./background.jpg'); */
+        /* background-image: radial-gradient(
+          circle,
+          #d16ba5,
+          #c777b9,
+          #ba83ca,
+          #aa8fd8,
+          #9a9ae1,
+          #8aa7ec,
+          #79b3f4,
+          #69bff8,
+          #52cffe,
+          #41dfff,
+          #46eefa,
+          #5ffbf1
+        ); */
+        background-color: white;
+      }
+
+      nav {
+        padding: 20px;
+      }
+
+      nav h1 {
+        text-align: center;
+        font-size: 48px;
+        font-family: "Press Start 2P", cursive;
+        color: #266db6;
+      }
+
+      main,
+      .main {
+        height: auto;
+        width: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 50px;
+      }
+
+      input[type="file"] {
+        margin-bottom: 20px;
+      }
+
+      .button-51 {
+        background-color: transparent;
+        border: 1px solid #266db6;
+        box-sizing: border-box;
+        color: #00132c;
+        font-family: "Avenir Next LT W01 Bold", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 24px;
+        padding: 16px 23px;
+        position: relative;
+        text-decoration: none;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .button-51:hover,
+      .button-51:active {
+        outline: 0;
+      }
+
+      .button-51:hover {
+        background-color: transparent;
+        cursor: pointer;
+      }
+
+      .button-51:before {
+        background-color: #d5edf6;
+        content: "";
+        height: calc(100% + 3px);
+        position: absolute;
+        right: -7px;
+        top: -9px;
+        transition: background-color 300ms ease-in;
+        width: 100%;
+        z-index: -1;
+      }
+
+      .button-51:hover:before {
+        background-color: #6dcff6;
+      }
+
+      @media (min-width: 768px) {
+        .button-51 {
+          padding: 16px 32px;
+        }
+      }
+
+      #output {
+        font-family: "Jakarta Sans", sans-serif;
+        font-size: 12px;
+        letter-spacing: 1px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 50px;
+        border: 1px solid #266db6;
+        height: 40vh;
+        width: 100vh;
+        margin: 1rem;
+        padding: 1rem;
+      }
+
+      #output p {
+        font-family: "Jakarta Sans", sans-serif;
+        font-size: 10px;
+        margin-bottom: 10px;
+      }
+
+      #loading {
+        padding-bottom: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="nav">
+      <h1>Image Captioning</h1>
+    </nav>
+    <form action="/caption" method="post" enctype="multipart/form-data">
+      <!-- <input type="file" name="file" /> -->
+      <div class="input-group mb-3 main">
+        <input
+          type="file"
+          class="form-control"
+          id="inputGroupFile02"
+          name="file"
+        />
+      </div>
+      <!-- <input type="submit" value="Submit" /> -->
+      <div id="loading" style="display: none">AI magic in progress...</div>
+      <button
+        type="submit"
+        class="btn btn-primary button-51"
+        onclick="showLoading()"
+      >
+        Submit
+      </button>
+    </form>
+    <main>
+      <div id="output" style="padding: 1rem"></div>
+    </main>
+    <script>
+      const form = document.querySelector("form");
+      const output = document.querySelector("#output");
+      const loading = document.querySelector("#loading");
+
+      function showLoading() {
+        loading.style.display = "block";
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        fetch("/caption", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const captions = data.captions;
+            const captionArray =
+              typeof captions === "string" ? [captions] : captions;
+            output.innerHTML = captionArray
+              .map((caption) => {
+                if (caption.includes("•")) {
+                  return `${caption.split("•").join("<br />")}`;
+                } else {
+                  return `${caption}<br />`;
+                }
+              })
+              .join("");
+            loading.style.display = "none";
+          })
+          .catch((error) => console.error(error));
+      });
+    </script>
+  </body>
+</html>
