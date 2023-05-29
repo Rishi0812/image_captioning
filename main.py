@@ -1,17 +1,9 @@
 import io
-import openai
-import os
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
-from dotenv import load_dotenv, find_dotenv
 from similarity import find_closest_sentences, read_sentences_from_csv
-
-load_dotenv(find_dotenv())
-
-# Set the OpenAI API key
-openai.api_key = os.environ.get("OPEN_AI_API")
 
 # load model
 processor = BlipProcessor.from_pretrained(
@@ -27,7 +19,8 @@ app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return open("static/index.html").read()
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 # Define the API endpoint for generating captions from uploaded image file
 
@@ -45,6 +38,7 @@ async def caption(file: UploadFile = File(...)):
 
     # Find the top 5 similar sentences from dataset
     input_sentence = raw_caption
+    print(input_sentence)
     file_path = "sentences.csv"
     column_name = "captions"
 
@@ -57,11 +51,11 @@ async def caption(file: UploadFile = File(...)):
     final_suggestions = []
     for sentence in top_sentences:
         final_suggestions.append(sentence)
-    formatted_suggestions = "\n".join(
+    captions_text = "\n".join(
         [f"• {item}" for item in final_suggestions])
 
     # Return the captions
-    return {"captions": formatted_suggestions}
+    return {"captions": captions_text}
 
 # Run the app
 if __name__ == "__main__":
