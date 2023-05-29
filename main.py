@@ -6,25 +6,32 @@ from fastapi.responses import HTMLResponse
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from PIL import Image
 from dotenv import load_dotenv, find_dotenv
+from similarity import find_closest_sentences, read_sentences_from_csv
 
 load_dotenv(find_dotenv())
 
 # Set the OpenAI API key
 openai.api_key = os.environ.get("OPEN_AI_API")
 
-#load model
-processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to("cuda")
+# load model
+processor = BlipProcessor.from_pretrained(
+    "Salesforce/blip-image-captioning-base")
+model = BlipForConditionalGeneration.from_pretrained(
+    "Salesforce/blip-image-captioning-base").to("cuda")
 
 # Create the FastAPI app
 app = FastAPI()
 
 # Define the root endpoint with the HTML response
+
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return open("static/index.html").read()
 
 # Define the API endpoint for generating captions from uploaded image file
+
+
 @app.post("/caption")
 async def caption(file: UploadFile = File(...)):
     image_bytes = await file.read()
@@ -36,29 +43,27 @@ async def caption(file: UploadFile = File(...)):
     out = model.generate(**inputs)
     raw_caption = processor.decode(out[0], skip_special_tokens=True)
 
-    # instagram worthy caption using openai
-    completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that can help give instagram worthy attractive captions based on the image description. Your output is always in proper format with each caption in seperate pointers (•) - followed by relevant hashtags\n\n"},
-                {
-                    "role": "system",
-                    "content": f"Give me 10 attractive instagram captions for the image having: {raw_caption}\n",
-                }
-            ],
-            temperature=0.2
-        )
-    captions_text = completion["choices"][0]["message"]["content"]
-    captions_text = captions_text.replace("•", "\n•")
+    # Find the top 5 similar sentences from dataset
+    input_sentence = raw_caption
+    file_path = "sentences.csv"
+    column_name = "captions"
+
+    # function to read sentences from csv file
+    sentences = read_sentences_from_csv(file_path, column_name)
+    # function to find closest sentences
+    top_sentences = find_closest_sentences(input_sentence, sentences, top_k=5)
+
+    # Format the suggestions
+    final_suggestions = []
+    for sentence in top_sentences:
+        final_suggestions.append(sentence)
+    formatted_suggestions = "\n".join(
+        [f"• {item}" for item in final_suggestions])
 
     # Return the captions
-    return {"captions": captions_text}
+    return {"captions": formatted_suggestions}
 
 # Run the app
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
-
-
