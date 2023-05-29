@@ -1,2 +1,2 @@
 # image_captioning
-Automatic Image Captioning and Hashtags using LLM's
+Automatic Instagram Ready Image Captioning with image input
